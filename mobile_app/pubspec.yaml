@@ -1,0 +1,61 @@
+name: kelime_analiz_mobile
+description: "Turkce kelime antrenmani ve mac sonrasi analiz uygulamasi."
+publish_to: none
+version: 0.10.6+17
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
+  firebase_storage: ^13.0.4
+  firebase_messaging: ^16.6.0
+  shared_preferences: ^2.5.4
+  http: ^1.6.0
+  turkish_word_engine:
+    path: ..
+  flutter_riverpod: ^3.4.3
+  cloud_functions: ^6.4.0
+  audioplayers: ^6.5.0
+  google_sign_in: ^7.2.0
+  flutter_native_splash: ^2.4.8
+  image_picker: ^1.2.3
+  flutter_local_notifications: ^22.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  fake_cloud_firestore: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/words.txt
+    - assets/images/
+    - assets/sounds/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/images/harf_arena_logo.png
+  adaptive_icon_background: "#052F1D"
+  adaptive_icon_foreground: assets/images/harf_arena_logo.png
+  adaptive_icon_foreground_inset: 20
+  min_sdk_android: 21
+
+flutter_native_splash:
+  android: true
+  ios: false
+  web: false
+  background_image: assets/images/splash_background.png
+  image: assets/images/harf_arena_logo.png
+  android_gravity: center
+  fullscreen: true
+  android_12:
+    color: "#052F1D"

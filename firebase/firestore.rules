@@ -1,0 +1,395 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(playerId) { return signedIn() && request.auth.uid == playerId; }
+    function isProfile(data) {
+      return data.keys().hasAll(['type', 'playerId']) &&
+        data.type == 'profile' && data.playerId is string;
+    }
+    function isMatch(data) {
+      return data.keys().hasAll([
+        'type', 'hostUid', 'guestUid', 'invitedGuestUid', 'turnUid',
+        'status', 'moveCount', 'turnDurationSeconds'
+      ]) && data.type == 'match';
+    }
+    function gamePlayer(room) {
+      return signedIn() && isMatch(room) &&
+        (room.hostUid == request.auth.uid || room.guestUid == request.auth.uid);
+    }
+    function roomParticipant(room) {
+      return signedIn() && isMatch(room) &&
+        (room.hostUid == request.auth.uid || room.guestUid == request.auth.uid ||
+          room.invitedGuestUid == request.auth.uid);
+    }
+    function ownsProfileRecord(profile) {
+      return signedIn() && isProfile(profile) &&
+        profile.playerId == request.auth.uid;
+    }
+    function validPlayerName(playerId, username) {
+      return playerId is string && username is string &&
+        exists(/databases/$(database)/documents/players/$(playerId)) &&
+        get(/databases/$(database)/documents/players/$(playerId)).data.username == username;
+    }
+    function validDuration(value) {
+      return value == 0 || value == 120 || value == 300 || value == 900 ||
+        value == 3600 || value == 86400;
+    }
+    function validProfileCreate(data) {
+      return signedIn() && isProfile(data) &&
+        data.playerId == request.auth.uid && data.username is string &&
+        data.username.size() >= 3 && data.username.size() <= 16 &&
+        data.usernameLower is string && data.updatedAt == request.time &&
+        data.keys().hasOnly([
+          'type', 'username', 'usernameLower', 'playerId', 'updatedAt'
+        ]);
+    }
+    function validProfileUpdate(before, after) {
+      return ownsProfileRecord(before) && ownsProfileRecord(after) &&
+        after.updatedAt == request.time &&
+        after.diff(before).affectedKeys().hasOnly([
+          'username', 'usernameLower', 'updatedAt'
+        ]);
+    }
+    function validInviteTarget(room) {
+      return (room.invitedGuestUid == null && room.invitedGuestName == null) ||
+        (room.invitedGuestUid is string &&
+          room.invitedGuestUid != request.auth.uid &&
+          validPlayerName(room.invitedGuestUid, room.invitedGuestName));
+    }
+    function validMatchCreate(data, roomId) {
+      return signedIn() &&
+        roomId.matches('^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$') &&
+        data.keys().hasOnly([
+          'type', 'hostUid', 'hostName', 'guestUid', 'guestName',
+          'invitedGuestUid', 'invitedGuestName', 'turnUid', 'status', 'seed',
+          'moveCount', 'turnDurationSeconds', 'turnStartedAt', 'createdAt',
+          'updatedAt', 'lastMoveId'
+        ]) && data.type == 'match' && data.hostUid == request.auth.uid &&
+        validPlayerName(data.hostUid, data.hostName) &&
+        data.guestUid == null && data.guestName == null &&
+        validInviteTarget(data) && data.turnUid == request.auth.uid &&
+        data.status == 'waiting' && data.seed is int && data.seed >= 0 &&
+        data.moveCount == 0 && validDuration(data.turnDurationSeconds) &&
+        data.turnStartedAt == null && data.lastMoveId == null &&
+        data.createdAt == request.time && data.updatedAt == request.time;
+    }
+    function validJoin(before, after) {
+      return before.status == 'waiting' && before.guestUid == null &&
+        (before.invitedGuestUid == null ||
+          before.invitedGuestUid == request.auth.uid) &&
+        after.diff(before).affectedKeys().hasOnly([
+          'guestUid', 'guestName', 'status', 'startedAt', 'turnStartedAt',
+          'updatedAt'
+        ]) && after.guestUid == request.auth.uid &&
+        validPlayerName(request.auth.uid, after.guestName) &&
+        after.status == 'playing' && after.startedAt == request.time &&
+        after.turnStartedAt == request.time && after.updatedAt == request.time;
+    }
+    function validCancel(before, after) {
+      return roomParticipant(before) && before.status == 'waiting' &&
+        before.guestUid == null &&
+        (request.auth.uid == before.hostUid ||
+          request.auth.uid == before.invitedGuestUid) &&
+        after.diff(before).affectedKeys().hasOnly([
+          'status', 'invitedGuestUid', 'invitedGuestName', 'updatedAt'
+        ]) && after.status == 'cancelled' &&
+        after.invitedGuestUid == null && after.invitedGuestName == null &&
+        after.updatedAt == request.time;
+    }
+    function isTimedOut(room) {
+      return room.turnDurationSeconds > 0 && room.turnStartedAt is timestamp &&
+        request.time >= room.turnStartedAt +
+          duration.value(room.turnDurationSeconds, 's');
+    }
+    function validPlacement(placement) {
+      return placement is map && placement.keys().hasOnly([
+          'row', 'col', 'letter', 'blank'
+        ]) && placement.row is int && placement.row >= 0 &&
+        placement.row < 15 && placement.col is int && placement.col >= 0 &&
+        placement.col < 15 && placement.letter is string &&
+        placement.letter.size() == 1 && placement.blank is bool;
+    }
+    function validPlacements(placements) {
+      return placements is list && placements.size() > 0 &&
+        placements.size() <= 7 && validPlacement(placements[0]) &&
+        (placements.size() < 2 || validPlacement(placements[1])) &&
+        (placements.size() < 3 || validPlacement(placements[2])) &&
+        (placements.size() < 4 || validPlacement(placements[3])) &&
+        (placements.size() < 5 || validPlacement(placements[4])) &&
+        (placements.size() < 6 || validPlacement(placements[5])) &&
+        (placements.size() < 7 || validPlacement(placements[6]));
+    }
+    function validExchangeLetters(letters) {
+      return letters is list && letters.size() > 0 && letters.size() <= 7 &&
+        letters[0] is string && letters[0].size() == 1 &&
+        (letters.size() < 2 || (letters[1] is string && letters[1].size() == 1)) &&
+        (letters.size() < 3 || (letters[2] is string && letters[2].size() == 1)) &&
+        (letters.size() < 4 || (letters[3] is string && letters[3].size() == 1)) &&
+        (letters.size() < 5 || (letters[4] is string && letters[4].size() == 1)) &&
+        (letters.size() < 6 || (letters[5] is string && letters[5].size() == 1)) &&
+        (letters.size() < 7 || (letters[6] is string && letters[6].size() == 1));
+    }
+    function validPlay(move) {
+      return move.keys().hasOnly([
+        'sequence', 'playerUid', 'action', 'word', 'row', 'col', 'direction',
+        'score', 'placements', 'createdAt'
+      ]) && move.action == 'play' && move.word is string &&
+        move.word.size() > 0 && move.word.size() <= 15 &&
+        move.row is int && move.row >= 0 && move.row < 15 &&
+        move.col is int && move.col >= 0 && move.col < 15 &&
+        (move.direction == 'horizontal' || move.direction == 'vertical') &&
+        move.score is int && move.score >= 0 && move.score <= 1000 &&
+        validPlacements(move.placements);
+    }
+    function validPass(move) {
+      return move.keys().hasOnly([
+        'sequence', 'playerUid', 'action', 'createdAt'
+      ]) && move.action == 'pass';
+    }
+    function validExchange(move) {
+      return move.keys().hasOnly([
+        'sequence', 'playerUid', 'action', 'exchangeLetters', 'createdAt'
+      ]) && move.action == 'exchange' && move.exchangeLetters is list &&
+        validExchangeLetters(move.exchangeLetters);
+    }
+    function validTimeout(move, room) {
+      return move.keys().hasOnly([
+        'sequence', 'playerUid', 'action', 'reason', 'expiredPlayerUid',
+        'createdAt'
+      ]) && move.action == 'pass' && move.reason == 'timeout' &&
+        move.expiredPlayerUid == room.turnUid && isTimedOut(room);
+    }
+    function validTurnEvent(move, room) {
+      return gamePlayer(room) && room.status == 'playing' &&
+        (room.turnUid == room.hostUid || room.turnUid == room.guestUid) &&
+        move.sequence is int && move.sequence == room.moveCount &&
+        move.playerUid == request.auth.uid && move.createdAt == request.time &&
+        ((request.auth.uid == room.turnUid &&
+            (validPlay(move) || validPass(move) || validExchange(move))) ||
+          validTimeout(move, room));
+    }
+    function validTurnAdvance(roomId, before, after) {
+      let move = getAfter(/databases/$(database)/documents/rooms/$(roomId)/moves/$(after.lastMoveId)).data;
+      return gamePlayer(before) && before.status == 'playing' &&
+        after.diff(before).affectedKeys().hasOnly([
+          'turnUid', 'moveCount', 'turnStartedAt', 'updatedAt', 'lastMoveId'
+        ]) && after.lastMoveId is string &&
+        after.moveCount == before.moveCount + 1 &&
+        after.turnUid == (before.turnUid == before.hostUid ?
+          before.guestUid : before.hostUid) &&
+        after.turnStartedAt == request.time && after.updatedAt == request.time &&
+        validTurnEvent(move, before);
+    }
+    function validFinish(before, after) {
+      return gamePlayer(before) && before.status == 'playing' &&
+        before.guestUid is string &&
+        after.diff(before).affectedKeys().hasOnly([
+          'status', 'finishedAt', 'endedBy', 'winnerUid', 'finishReason',
+          'hostScore', 'guestScore', 'updatedAt'
+        ]) && after.status == 'finished' &&
+        after.finishedAt == request.time && after.updatedAt == request.time &&
+        after.endedBy == request.auth.uid && after.finishReason == 'forfeit' &&
+        after.winnerUid == (request.auth.uid == before.hostUid ?
+          before.guestUid : before.hostUid) &&
+        after.hostScore is int && after.hostScore >= 0 &&
+        after.hostScore <= 10000 && after.guestScore is int &&
+        after.guestScore >= 0 && after.guestScore <= 10000;
+    }
+    function validRoomUpdate(roomId, before, after) {
+      return isMatch(before) && isMatch(after) &&
+        (validJoin(before, after) || validCancel(before, after) ||
+          validTurnAdvance(roomId, before, after) || validFinish(before, after));
+    }
+
+    match /players/{playerId} {
+      allow read: if signedIn();
+      allow create, update: if owns(playerId);
+      allow delete: if false;
+      match /analyses/{matchId} {
+        allow read, create: if owns(playerId);
+        allow update, delete: if false;
+      }
+      match /devices/{deviceId} {
+        allow read, delete: if owns(playerId);
+        allow create, update: if owns(playerId) &&
+          request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt']) &&
+          request.resource.data.token is string &&
+          request.resource.data.token.size() > 0 &&
+          request.resource.data.platform is string &&
+          request.resource.data.updatedAt == request.time;
+      }
+      match /progression/{matchId} {
+        allow read: if owns(playerId);
+        allow write: if false;
+      }
+    }
+
+    match /usernames/{usernameKey} {
+      allow read: if true;
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly([
+          'playerId', 'username', 'usernameLower', 'createdAt', 'updatedAt'
+        ]) && request.resource.data.playerId == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+      allow update: if signedIn() &&
+        resource.data.playerId == request.auth.uid &&
+        request.resource.data.playerId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'username', 'usernameLower', 'updatedAt'
+        ]) && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && resource.data.playerId == request.auth.uid;
+    }
+
+    match /rooms/{roomId} {
+      function readableRoomRecord() {
+        return signedIn() &&
+          ((resource.data.type == 'profile' &&
+              resource.data.playerId is string) ||
+            resource.data.hostUid == request.auth.uid ||
+            resource.data.guestUid == request.auth.uid ||
+            resource.data.invitedGuestUid == request.auth.uid);
+      }
+      allow get: if readableRoomRecord() ||
+        (signedIn() &&
+          !exists(/databases/$(database)/documents/rooms/$(roomId)));
+      allow list: if readableRoomRecord();
+      allow create: if validProfileCreate(request.resource.data) ||
+        validMatchCreate(request.resource.data, roomId);
+      allow update: if (isProfile(resource.data) &&
+          validProfileUpdate(resource.data, request.resource.data)) ||
+        validRoomUpdate(roomId, resource.data, request.resource.data);
+      allow delete: if false;
+
+      match /moves/{moveId} {
+        function parentRecord() {
+          return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+        }
+        function roomBefore(code) {
+          return get(/databases/$(database)/documents/rooms/$(code)).data;
+        }
+        function roomAfter(code) {
+          return getAfter(/databases/$(database)/documents/rooms/$(code)).data;
+        }
+        function profileBelongsToRoom(profile, room) {
+          return isProfile(profile) && isMatch(room) &&
+            (profile.playerId == room.hostUid ||
+              profile.playerId == room.guestUid ||
+              profile.playerId == room.invitedGuestUid);
+        }
+        function validMembershipCreate(profile) {
+          let room = roomAfter(request.resource.data.roomCode);
+          return request.resource.data.keys().hasOnly([
+              'action', 'sequence', 'roomCode', 'createdAt'
+            ]) && request.resource.data.action == 'membership' &&
+            request.resource.data.sequence is int &&
+            request.resource.data.roomCode is string &&
+            request.resource.data.createdAt == request.time &&
+            (gamePlayer(room) || ownsProfileRecord(profile)) &&
+            profileBelongsToRoom(profile, room);
+        }
+        function validInviteCreate(profile) {
+          let room = roomAfter(request.resource.data.roomCode);
+          return request.resource.data.keys().hasOnly([
+              'action', 'sequence', 'roomCode', 'fromUsername',
+              'turnDurationSeconds', 'createdAt'
+            ]) && request.resource.data.action == 'invite' &&
+            request.resource.data.sequence is int &&
+            request.resource.data.roomCode is string &&
+            request.resource.data.fromUsername == room.hostName &&
+            request.resource.data.turnDurationSeconds == room.turnDurationSeconds &&
+            request.resource.data.createdAt == request.time &&
+            (request.auth.uid == room.hostUid || ownsProfileRecord(profile)) &&
+            profile.playerId == room.invitedGuestUid;
+        }
+        function validInviteCancelledCreate(profile) {
+          let before = roomBefore(request.resource.data.roomCode);
+          let after = roomAfter(request.resource.data.roomCode);
+          return request.resource.data.keys().hasOnly([
+              'action', 'roomCode', 'cancelledAt'
+            ]) && request.resource.data.action == 'invite_cancelled' &&
+            request.resource.data.roomCode is string &&
+            request.resource.data.cancelledAt == request.time &&
+            profile.playerId == before.invitedGuestUid &&
+            validCancel(before, after);
+        }
+        function validInviteCancellationUpdate(profile) {
+          let before = roomBefore(resource.data.roomCode);
+          let after = roomAfter(resource.data.roomCode);
+          return resource.data.action == 'invite' &&
+            request.resource.data.roomCode == resource.data.roomCode &&
+            request.resource.data.action == 'invite_cancelled' &&
+            request.resource.data.cancelledAt == request.time &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'action', 'cancelledAt'
+            ]) && profile.playerId == before.invitedGuestUid &&
+            validCancel(before, after);
+        }
+        function validHistoryCreate(profile) {
+          let room = roomAfter(request.resource.data.roomCode);
+          return request.resource.data.keys().hasOnly([
+              'action', 'sequence', 'roomCode', 'hostName', 'guestName',
+              'hostScore', 'guestScore', 'endedBy', 'winnerUid',
+              'finishReason', 'createdAt'
+            ]) && request.resource.data.action == 'history' &&
+            request.resource.data.sequence is int &&
+            request.resource.data.roomCode is string &&
+            request.resource.data.hostName == room.hostName &&
+            request.resource.data.guestName == room.guestName &&
+            request.resource.data.hostScore == room.hostScore &&
+            request.resource.data.guestScore == room.guestScore &&
+            request.resource.data.endedBy == room.endedBy &&
+            request.resource.data.winnerUid == room.winnerUid &&
+            request.resource.data.finishReason == room.finishReason &&
+            request.resource.data.createdAt == request.time &&
+            room.status == 'finished' && gamePlayer(room) &&
+            (profile.playerId == room.hostUid ||
+              profile.playerId == room.guestUid);
+        }
+        function validGameMoveCreate() {
+          let before = roomBefore(roomId);
+          let after = roomAfter(roomId);
+          return isMatch(before) && after.lastMoveId == moveId &&
+            after.moveCount == before.moveCount + 1 &&
+            validTurnEvent(request.resource.data, before);
+        }
+
+        allow read: if (isProfile(parentRecord()) &&
+            ownsProfileRecord(parentRecord())) ||
+          (isMatch(parentRecord()) && gamePlayer(parentRecord()));
+        allow create: if (isProfile(parentRecord()) &&
+            (validMembershipCreate(parentRecord()) ||
+              validInviteCreate(parentRecord()) ||
+              validInviteCancelledCreate(parentRecord()) ||
+              validHistoryCreate(parentRecord()))) || validGameMoveCreate();
+        allow update: if isProfile(parentRecord()) &&
+          validInviteCancellationUpdate(parentRecord());
+        allow delete: if false;
+      }
+    }
+
+    match /leaderboard_weekly/{playerId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /leaderboard_all_time/{playerId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /matchmaking_queue/{playerId} {
+      allow read, delete: if owns(playerId);
+      allow create, update: if owns(playerId) &&
+        request.resource.data.keys().hasOnly([
+          'playerId', 'username', 'turnDurationSeconds', 'status', 'roomCode',
+          'opponentName', 'createdAt', 'updatedAt'
+        ]) && request.resource.data.playerId == request.auth.uid &&
+        request.resource.data.username is string &&
+        validDuration(request.resource.data.turnDurationSeconds) &&
+        request.resource.data.status == 'searching' &&
+        request.resource.data.roomCode == null &&
+        request.resource.data.opponentName == null &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+    }
+  }
+}

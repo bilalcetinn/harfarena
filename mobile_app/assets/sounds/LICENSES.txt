@@ -1,0 +1,22 @@
+HarfArena Sound Assets
+
+Bu klasördeki kaynak sesleri kullanıcı sağlamıştır.
+Play Store yayını öncesinde her kaynak sesin lisans kaydını saklayın.
+
+Önerilen kayıt:
+ui_tap.wav        - kaynak: kullanıcı tarafından sağlanan "dokunma.wav"
+move_success.wav  - kaynak: kullanıcı tarafından sağlanan "doğru hamle.wav"
+move_error.wav    - kaynak: kullanıcı tarafından sağlanan "hatalı hamle.wav"
+win.wav           - kaynak: kullanıcı tarafından sağlanan "kazanma.wav"
+lose.wav          - kaynak: kullanıcı tarafından sağlanan "kaybetme.wav"
+invite.wav        - kaynak: Mixkit "happy bell alert" dosyası
+turn.wav          - kaynak: Mixkit "positive notification" dosyası
+tile_pick.wav     - ui_tap.wav'den türetilmiş kısa varyasyon
+tile_drop.wav     - ui_tap.wav'den türetilmiş kısa varyasyon
+
+Not:
+"telefon bildirim.wav" ile "mixkit-positive-notification-951.wav" byte-byte aynı
+dosya olduğu için pakete yalnızca turn.wav olarak bir kez konmuştur.
+
+Mixkit kullandığınız dosyalar için indirme tarihi ve lisans sayfası bilgisini
+yayın öncesinde proje kayıtlarınıza ekleyin.
