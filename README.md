@@ -1,110 +1,88 @@
-# Turkish Word Engine — MVP 0.5
+# 🎮 HarfArena
 
-Türkçe 15x15 kelime oyunları için bağımsız, kural tabanlı hamle üretme ve oyun analizi motoru.
+HarfArena is an actively developed Turkish word game built with Flutter.
 
-## V0.2 ile gelenler
+The project combines a rule-based word engine, online multiplayer features, player profiles, matchmaking, game analysis, and Firebase-powered backend services in a modern mobile application.
 
-- 15x15 tahta ve 7 taşlık rack
-- İlk hamlede merkez zorunluluğu
-- Mevcut taşlara temas ve yan kelime doğrulama
-- H2 / H3 / K2 / K3
-- Joker (`?`) desteği ve joker için 0 puan
-- +25 bonus hücresi
-- 7 taş kullanımında +30 puan
-- `TrieWordDictionary`
-- Trie tabanlı hamle üretimi
-- Perpendicular cross-check kümeleri
-- En yüksek puanlı N hamleyi sıralama
-- Oynanan hamleyi en iyi hamleyle karşılaştıran `PositionAnalyzer`
-- Puan kaybı, anlık verimlilik ve hamle kalite sınıflandırması
-- Birden fazla turu sırayla analiz eden `GameAnalyzer`
-- Harici kelime listesini normalize eden `tool/build_dictionary.dart`
+> 🚧 HarfArena is currently under active development.
 
-## V0.3 ile gelenler
+---
 
-- Gerçek 15x15 klasik Kelimelik H2/H3/K2/K3 yerleşimi
-- K2 olarak puanlanan merkez yıldız hücresi
-- Oyuna özel rastgele +25 hücresi ekleyebilen `KelimelikBoard.classic()`
-- Tahta düzeninin hücre sayısı, simetrisi ve açılış puanı testleri
-- 62.025 kelimelik temizlenmiş Türkçe başlangıç sözlüğü
-- Dosyadan Trie sözlüğü yükleyen `DictionaryLoader`
+## ✨ Features
 
-## V0.4 ile gelenler
+### 🎯 Word Game Engine
 
-- Dışarıdan gelen hamleyi sözlük, tahta, rack ve bağlantı kurallarıyla
-  doğrulayan `MoveValidator`
-- Kullanıcıdan gelen puanı güvenilir saymak yerine yeniden hesaplayan analiz
-- Geçersiz yan kelime, eksik/fazla yerleşim, çakışma ve merkez dışı açılış
-  kontrolleri
-- Yedi taştan büyük rack girdilerini erken reddeden koruma
+- 15×15 board system
+- 7-tile rack
+- Turkish character support
+- Word validation
+- Premium cells
+- Joker tile support
+- Score calculation
+- Cross-word validation
+- Trie-based dictionary search
+- Top move generation
+- Position analysis
+- Move quality evaluation
 
-## V0.5 ile gelenler
+### 🌐 Online Multiplayer
 
-- Windows için görsel `Kelime Analiz` uygulaması
-- Gerçek 15x15 premium tahta üzerinde mevcut harfleri elle girebilme
-- Elde kalan 1–7 harf ve joker (`?`) ile en iyi 10 hamleyi arama
-- Seçilen hamleyi tahta üzerinde yeşil önizleme olarak gösterme
-- İsteğe bağlı +25 bonus hücresini satır/sütun olarak seçme
-- Sözlüğü uygulama içinde taşıyan, ayrıca dosya seçtirmeyen paketleme
-- Aynı Masaüstü kurulumunu yenileyen `uygulamayi_guncelle.bat`
+- Online game rooms
+- Matchmaking
+- Game invitations
+- Turn-based gameplay
+- Real-time game state handling
+- Match result screens
 
-## Mobil ürün hedefi
+### 👤 Player System
 
-Asıl ürün `mobile_app` klasöründeki Android uygulamasıdır. Masaüstü arayüzü
-yalnızca motoru geliştirirken tahtayı ve puanları hızlı doğrulamak için kullanılan
-bir test aracıdır.
+- User authentication
+- Email verification
+- Player profiles
+- Profile editing
+- Player statistics
+- Match history
+- Leaderboard
+- Local player settings
 
-Android uygulamasında şu anda:
+### 🔔 Application Features
 
-- 62.025 kelimelik Trie motoru ve gerçek tahta kuralları uygulamanın içindedir.
-- Kullanıcıdan ekran üstü gösterim ve Android ekran yakalama izinleri alınır.
-- Foreground MediaProjection servisi ekranı canlı yakalar ve son kareyi güvenli
-  biçimde uygulamanın önbelleğine yazar.
-- Kelimelik üzerinde yakalamanın sürdüğünü gösteren küçük bir durum balonu vardır.
+- In-app notifications
+- Game invitations
+- Sound effects
+- Animated UI elements
+- Custom mobile interface
+- Game analysis screen
 
-Sıradaki geliştirme, gerçek telefon ekran görüntüleriyle 15×15 tahta alanını
-kalibre etmek, hücre harflerini tanımak ve motor sonucunu yüzen panelde
-göstermektir.
+---
 
-## Windows geliştirme aracını kullanma
+## 🧠 Analysis Engine
 
-Masaüstündeki **Kelime Analiz** kısayoluna çift tıklayın. Oyunda tahtada
-bulunan harfleri aynı hücrelere yazın, elinizdeki taşları sağdaki alana girin
-ve **ANALİZ ET** düğmesine basın. Joker taşı `?` ile gösterilir. Sonuçlardan
-birine tıklanınca yeni konulacak taşlar tahtada yeşil görünür.
+HarfArena includes an independent rule-based engine capable of generating and evaluating legal moves on a 15×15 Turkish word board.
 
-Kaynak kod değiştirildikten sonra Masaüstündeki
-`turkish_word_engine\uygulamayi_guncelle.bat` dosyası çalıştırılarak kurulu
-uygulama aynı konumda güncellenebilir.
+The engine supports:
 
-## Neden model değil?
+- Trie-based move generation
+- Perpendicular cross-check validation
+- Word and letter multipliers
+- Joker tiles
+- Multi-word scoring
+- Best-move search
+- Played-move comparison
+- Score-loss calculation
+- Move efficiency analysis
 
-V0.x çekirdeği deterministiktir: tüm yasal hamleleri üretir ve resmi puan kurallarıyla puanlar. ML/Monte Carlo daha sonra rack leave, rakibe açılan alan ve kazanma olasılığı gibi pozisyonel değerler için eklenebilir.
-
-## Sözlük stratejisi
-
-Kelimelik TDK Güncel Türkçe Sözlüğü'nü referans aldığını, fakat kendi listesinin birebir aynı olmadığını açıkça belirtiyor. Bu nedenle motor herhangi bir özel Kelimelik veritabanını paketlemez. Sözlük bağımsız bir katmandır.
-
-Açık bir kelime listesini hazırlamak için:
-
-```bash
-dart run tool/build_dictionary.dart source_words.txt assets/words.txt
-```
-
-Dönüştürücü boşluk/noktalama içeren girdileri ve 15 harften uzun kelimeleri eler, Türkçe büyük harfe normalize eder ve tekilleştirir.
-
-## Kullanım
+Example:
 
 ```dart
-final dictionary = await DictionaryLoader.loadTrie('assets/words.txt');
+final dictionary =
+    await DictionaryLoader.loadTrie('assets/words.txt');
 
-final engine = TrieMoveGenerator(dictionary: dictionary);
+final engine = TrieMoveGenerator(
+  dictionary: dictionary,
+);
+
 final board = KelimelikBoard.classic();
-
-// Oyunda +25 hücresi görünüyorsa koordinatını ayrıca verin:
-// final board = KelimelikBoard.classic(
-//   bonus25: const Position(7, 6),
-// );
 
 final moves = engine.generate(
   board: board,
@@ -113,10 +91,16 @@ final moves = engine.generate(
 );
 ```
 
-## Stockfish-benzeri pozisyon analizi
+---
+
+## 🔍 Position Analysis
+
+The analysis engine can compare a played move against the best move available in the current position.
 
 ```dart
-final analyzer = PositionAnalyzer(moveGenerator: engine);
+final analyzer = PositionAnalyzer(
+  moveGenerator: engine,
+);
 
 final result = analyzer.analyze(
   board: board,
@@ -130,43 +114,227 @@ print(result.efficiency);
 print(result.quality);
 ```
 
-Şimdilik kalite yalnızca anlık puan kaybına göre hesaplanır. İleriki sürümlerde rack leave + board control + Monte Carlo ile stratejik değerlendirme eklenecek.
+The current evaluation system primarily focuses on immediate score efficiency.
 
-## Çalıştırma
+Future versions may include additional strategic factors such as rack value, board control and deeper position evaluation.
 
-Gereksinim: Dart SDK 3.3 veya daha yeni bir 3.x sürümü.
+---
 
-```bash
-dart pub get
-dart analyze
-dart test
-dart run example/main.dart
+## 🏗️ Architecture
+
+The mobile application follows a layered structure separating UI, domain logic and data access.
+
+```text
+mobile_app/
+├── lib/
+│   ├── core/
+│   ├── data/
+│   ├── domain/
+│   ├── di/
+│   └── ui/
+├── assets/
+├── test/
+└── android/
 ```
 
-## Doğrulama durumu
+### Main Layers
 
-Bu paket Dart statik analizinden hatasız geçer. Test paketi şu alanları kapsar:
+**UI**
+- Views
+- Reusable widgets
+- Game interface
+- Profile screens
 
-- temel harf puanları, merkez kuralı, joker ve 7 taş bonusu
-- yeni konulan taşın kelime ve harf çarpanları
-- aynı hamlede ana kelime ile yan kelimenin birlikte puanlanması
-- Trie önek araması, mevcut kelimeyi uzatma ve cross-check filtreleri
-- Trie üreticinin temsilî pozisyonlarda exhaustive referans üreticiyle eşleşmesi
-- gerçek sözlük dosyasının 62.025 kelimeyle yüklenmesi
-- oynanan hamlenin yeniden puanlanması ve geçersiz hamlelerin reddedilmesi
-- puan kaybı sınıflandırması ve hamle uygulanırken dolu hücre koruması
+**Domain**
+- Models
+- Repository abstractions
+- Game rules
+- Validation services
 
-## MVP için kalan işler
+**Data**
+- DTOs
+- Firebase services
+- API implementations
+- Repository implementations
 
-- Pas, taş değiştirme, torba ve oyun sonu ceza/bonuslarını oyun geçmişi modeline
-  eklemek.
-- Büyük sözlükte süre/bellek benchmarkı kurmak. Mevcut üretici Trie ve cross-check
-  kullanır, ancak henüz anchor-square/GADDAG düzeyinde optimize değildir.
+---
 
-## Bağımsızlık
+## 🛠️ Tech Stack
 
-Bu proje Kelimelik istemci koduna, özel API'lerine veya özel kelime veritabanına erişmez. Kurallar bağımsız şekilde modellenmiştir.
+### Mobile
 
-Paketlenen başlangıç sözlüğünün kaynak ve lisans bilgisi
-`THIRD_PARTY_NOTICES.md` dosyasında yer alır. Bu liste Kelimelik'in özel
-veritabanı değildir ve oyunla birebir eşleşmesi garanti edilmez.
+- Flutter
+- Dart
+
+### State & Architecture
+
+- Riverpod
+- Layered Architecture
+- Repository Pattern
+
+### Backend
+
+- Firebase
+- Firebase Authentication
+- Firestore
+- Cloud Functions
+- Firebase Storage
+
+### Backend Functions
+
+- TypeScript
+- Node.js
+
+### Development
+
+- Git
+- GitHub
+- VS Code
+- Android
+
+---
+
+## 🗂️ Project Structure
+
+```text
+harfarena/
+│
+├── mobile_app/          # Flutter mobile application
+├── backend/             # Backend / Cloud Functions
+├── firebase/            # Firestore and Storage rules
+├── lib/                 # Core Turkish word engine
+├── test/                # Engine tests
+├── tool/                # Dictionary tooling
+├── windows_app/         # Development/testing utility
+├── assets/              # Dictionary assets
+└── example/             # Engine usage examples
+```
+
+---
+
+## 🧪 Testing
+
+The project includes unit and widget tests covering multiple parts of the application.
+
+Tested areas include:
+
+- Dictionary loading
+- Word generation
+- Move validation
+- Score calculation
+- Board rules
+- Position analysis
+- Player progression
+- Match history
+- Online game services
+- Matchmaking
+- UI interactions
+- Application bootstrap
+
+Run engine tests with:
+
+```bash
+dart test
+```
+
+For the Flutter application:
+
+```bash
+cd mobile_app
+flutter test
+```
+
+---
+
+## 🚀 Running the Mobile App
+
+### Requirements
+
+- Flutter SDK
+- Dart SDK
+- Android SDK
+
+Clone the repository:
+
+```bash
+git clone https://github.com/bilalcetinn/harfarena.git
+cd harfarena/mobile_app
+```
+
+Install dependencies:
+
+```bash
+flutter pub get
+```
+
+Run the application:
+
+```bash
+flutter run
+```
+
+---
+
+## 📚 Dictionary
+
+The word engine uses a normalized Turkish word list stored independently from the game logic.
+
+Dictionary processing is handled through:
+
+```bash
+dart run tool/build_dictionary.dart source_words.txt assets/words.txt
+```
+
+The tool:
+
+- Normalizes Turkish characters
+- Removes invalid entries
+- Removes duplicates
+- Filters unsupported word lengths
+
+Dictionary source and licensing information are documented in:
+
+```text
+THIRD_PARTY_NOTICES.md
+```
+
+---
+
+## 🗺️ Roadmap
+
+Planned improvements include:
+
+- Improved multiplayer experience
+- Better matchmaking
+- More detailed player statistics
+- Expanded game analysis
+- Improved position evaluation
+- Performance optimizations
+- Additional game modes
+- UI/UX improvements
+- Production release preparation
+
+---
+
+## ⚠️ Disclaimer
+
+HarfArena is an independent software project.
+
+It does not use private APIs, proprietary client code or private word databases belonging to third-party word games.
+
+The game rules and analysis engine are independently implemented.
+
+---
+
+## 👨‍💻 Developer
+
+Developed by **Bilal Cetin**
+
+Computer Engineering Student  
+Flutter & Software Developer
+
+GitHub: [@bilalcetinn](https://github.com/bilalcetinn)
+
+---
+
+⭐ If you find the project interesting, feel free to follow its development.
